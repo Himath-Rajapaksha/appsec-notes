@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Create a dated note from a template.
+#   bin/new-note <drill|cve|lab> <slug>
+set -euo pipefail
+
+type=${1:-}
+slug=${2:-}
+
+if [[ -z $type || -z $slug ]]; then
+  echo "usage: bin/new-note <drill|cve|lab> <slug>" >&2
+  exit 64
+fi
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+case $type in
+  drill) dir="$root/drills" ;;
+  cve)   dir="$root/cves" ;;
+  lab)   dir="$root/labs" ;;
+  *)     echo "unknown type: $type (drill|cve|lab)" >&2; exit 64 ;;
+esac
+
+date=$(date +%F)
+file="$dir/$date-$slug.md"
+
+if [[ -e $file ]]; then
+  echo "already exists: $file" >&2
+  exit 73
+fi
+
+mkdir -p "$dir"
+sed -e "s/{{DATE}}/$date/g" -e "s/{{SLUG}}/$slug/g" "$root/templates/$type.md" >"$file"
+printf '%s\n' "$file"
